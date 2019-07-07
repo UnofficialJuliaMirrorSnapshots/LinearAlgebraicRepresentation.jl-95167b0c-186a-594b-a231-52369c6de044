@@ -666,8 +666,38 @@ function arrange2D(V,EV)
 	V, copEV, copFE = Lar.Arrangement.planar_arrangement(W::Lar.Points, cop_EW::Lar.ChainOp)
 	EVs = Lar.FV2EVs(copEV, copFE) # polygonal face fragments
 
-	triangulated_faces = Lar.triangulate2d(V, [copEV, copFE])
+	triangulated_faces = Lar.triangulate2D(V, [copEV, copFE])
 	FVs = convert(Array{Lar.Cells}, triangulated_faces)
 	V = convert(Lar.Points,V')
 	return V,FVs,EVs
+end
+
+
+"""
+	pols2tria(W::Lar.Points, copEV::Lar.ChainOp,
+			copFE::Lar.ChainOp, copCF::Lar.ChainOp)
+
+Take a chain 3-complex and return arrays of boundary simplicial complexes.
+Input and ouput Points (embedding geometry) are by columns.
+Arrays of simplicial complexes are by body, by face, and by boundary of face.
+```
+
+```
+"""
+function pols2tria(W, copEV, copFE, copCF) # W by columns
+	V = convert(Lar.Points,W')
+	triangulated_faces = Lar.triangulate(V, [copEV, copFE])
+	EVs = Lar.FV2EVs(copEV, copFE) # polygonal face fragments
+	FVs = convert(Array{Lar.Cells}, triangulated_faces)
+	CVs = []
+	for cell in 1:copCF.m
+		obj = []
+        for f in copCF[cell, :].nzind
+            triangles = triangulated_faces[f]
+			append!(obj, triangles)
+        end
+		push!(CVs,obj)
+    end
+	V = convert(Lar.Points,V')
+	return V,CVs,FVs,EVs
 end
