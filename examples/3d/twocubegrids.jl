@@ -30,12 +30,10 @@ function twocubegrids(n,m,p)
 
     #GL.VIEW(GL.numbering(.2)((W,[WW,EV])));
 
-    triangulated_faces = Lar.triangulate(V, [copEV, copFE])
-    FVs = convert(Array{Lar.Cells}, triangulated_faces)
-    V = convert(Lar.Points, V')
+    V,CVs,FVs,EVs = Lar.pols2tria(W, copEV, copFE, copCF)
     GL.VIEW(GL.GLExplode(V,FVs,1.5,1.5,1.5,99,1));
-    EVs = Lar.FV2EVs(copEV, copFE) # polygonal face fragments
     GL.VIEW(GL.GLExplode(V,EVs,1.5,1.5,1.5,99,1));
+    GL.VIEW(GL.GLExplode(V,CVs,5,5,5,99,1));
 
     return V, copEV, copFE, copCF
 end
