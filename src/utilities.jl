@@ -1,4 +1,4 @@
-Lar = LinearAlgebraicRepresentation
+# Lar = LinearAlgebraicRepresentation
 
 
 function interior_to_f(triangle,f,V,FV,EV,FE)
@@ -26,7 +26,7 @@ function interior_to_f(triangle,f,V,FV,EV,FE)
 	vdict = Dict(collect(zip(FV[f], 1:length(FV[f]))))
 	celledges = [[vdict[v] for v in EV[e]] for e in FE[f]]
 
-	out = Lar.pointInPolygonClassification(P2D,celledges)(checkpoint)
+	out = pointInPolygonClassification(P2D,celledges)(checkpoint)
 	if out=="p_in"
 		return true
 	else
@@ -1017,22 +1017,18 @@ function triangulate2D(V::Lar.Points, cc::Lar.ChainComplex)::Array{Any, 1}
 		V = [V zeros(size(V,1),1)]
 	end
 
+	polygons,edgecycles = faces2polygons(copEV, copFE) #new
+
     for f in 1:copFE.m
         edges_idxs = copFE[f, :].nzind
         edge_num = length(edges_idxs)
         edges = Array{Int64,1}[] #zeros(Int64, edge_num, 2)
 
-        fv = Lar.buildFV(copEV, copFE[f, :])
+		# fv = Lar.buildFV(copEV, copFE[f, :])
+		fv = cat(polygons[f])
         vs = V[fv, :]
-
-        for i in 1:length(fv)
-        	edge = Int64[0,0]
-            edge[1] = fv[i]
-            edge[2] = i == length(fv) ? fv[1] : fv[i+1]
-            push!(edges,edge::Array{Int64,1})
-        end
-        edges = hcat(edges...)'
-        edges = convert(Array{Int64,2}, edges)
+		edges = cat(edgecycles[f])
+        edges = convert(Array{Int64,2}, hcat(edges...)')
 
 		# triangulated_faces[f] = Triangle.constrained_triangulation(
         # 	vs, fv, edges, fill(true, edge_num))
@@ -1270,11 +1266,8 @@ original and generated edges. `V` is given by column.
 function triangulate2d(V, EV)
     # data for Constrained Delaunay Triangulation (CDT)
     points = convert(Array{Float64,2}, V')
-@show points
 	points_map = Array{Int64,1}(collect(1:1:size(points)[1]))
-@show points_map
     edges_list = convert(Array{Int64,2}, hcat(EV...)')
-@show edges_list
     edge_boundary = [true for k=1:size(edges_list,1)] ## dead code !!
     trias = Triangle.constrained_triangulation(points,points_map,edges_list)
 	innertriangles = Array{Int64,1}[]
