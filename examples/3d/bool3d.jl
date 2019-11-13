@@ -1,6 +1,6 @@
 using LinearAlgebraicRepresentation, ViewerGL, SparseArrays
 Lar = LinearAlgebraicRepresentation; GL = ViewerGL
-using Base.union
+import Base.union
 
 # 3D Boolean example generation
 #-------------------------------------------------------------------------------
@@ -8,14 +8,11 @@ n,m,p = 1,1,1
 V,(VV,EV,FV,CV) = Lar.cuboidGrid([n,m,p],true)
 cube = V,FV,EV
 
-V,FV = Lar.sphere()()
-EV = Lar.simplexFacets(FV)
-sphere = V,FV,EV
-
 # three cubes in "assembly"
 assembly = Lar.Struct([ cube,
     Lar.t(.3,.4,.25), Lar.r(pi/5,0,0), Lar.r(0,0,pi/12), cube,
-    Lar.t(-.2,.4,-.2), Lar.r(0,pi/5,0), Lar.r(0,pi/12,0), cube ])
+    Lar.t(-.2,.4,-.2), Lar.r(0,pi/5,0), Lar.r(0,pi/12,0), cube
+])
 
 V,FV,EV = Lar.struct2lar(assembly)
 GL.VIEW([ GL.GLGrid(V,FV), GL.GLFrame ]);
@@ -29,40 +26,29 @@ B = boolmatrix[:,3]
 C = boolmatrix[:,4]
 AorB = A .| B
 AandB = A .& B
-AxorB = AorB .& (.! AandB)
+AxorB = AorB .& (.!AandB) # = A .⊻ B
 AorBorC = A .| B .| C
-AorBorC = .|(A,B,C)
+AorBorC = .|(A, B, C)
 AandBandC = A .& B .& C
-AandBandC = .&(A,B,C)
-AminusBminusC = .&(A, .!(B .| C)) # A - B - C
+AandBandC = .&(A, B, C)
+AminBminC = .&(A, .!B, .!C) # A - B - C
 
-unione = .|(A,B,C)
-unione = Matrix(copCF)' * Int.(unione) # coord vector of Faces
+unione = Matrix(copCF)' * Int.(AorBorC) # coord vector of Faces
 intersection = Matrix(copCF)' * Int.(AandBandC) # coord vector of Faces
-difference = Matrix(copCF)' * Int.(AminusBminusC) # coord vector of Faces
+difference = Matrix(copCF)' * Int.(AminBminC) # coord vector of Faces
 
 V,CVs,FVs,EVs = Lar.pols2tria(W, copEV, copFE, copCF) # whole assembly
-Fs = unione
+Fs = difference
 V,CVs,FVs,EVs = Lar.pols2tria(W, copEV, copFE, copCF, Fs) # part of assembly
 
 
-
-
-
 # EV = Lar.cop2lar(copEV)
-# EVor = [ev for (k,ev) in enumerate(EV) if abs(union[k])==1 ]
+# EVor = [ev for (k,ev) in enumerate(EV) if abs(unione[k])==1 ]
 # EVand = [ev for (k,ev) in enumerate(EV) if abs(intersection[k])==1 ]
 # EVxor = [ev for (k,ev) in enumerate(EV) if abs(xor[k])==1 ]
 
 
-
-
-GL.VIEW(GL.GLExplode(V,FVs,1.,1.,1.,99,1));
-GL.VIEW(GL.GLExplode(V,EVs,1.,1.,1.,99,1));
-meshes = GL.GLExplode(V,CVs[2:end],1.5,1.5,1.5,99,1);
-GL.VIEW( push!( meshes, GL.GLFrame) );
-
-# GL.VIEW(GL.GLExplode(V,[EVor],1.,1.,1.,99,1));
-
-
-GL.VIEW([ GL.GLGrid(V,EV, GL.COLORS[1],0.5), GL.GLFrame ]);
+GL.VIEW(GL.GLExplode(V,FVs,1.5,1.5,1.5,99,1));
+GL.VIEW(GL.GLExplode(V,EVs,1.,1.,1.,1,1));
+# meshes = GL.GLExplode(V,CVs,5,5,5,99,1);
+# GL.VIEW( push!( meshes, GL.GLFrame) );
